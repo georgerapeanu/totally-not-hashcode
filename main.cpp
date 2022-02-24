@@ -88,7 +88,7 @@ public:
   }
 
   void update_skill_level_of(string skill_name, int level){
-    for(auto it:skills){
+    for(auto &it:skills){
       if(it.get_name() == skill_name){
         it.update_level(level);
       }
@@ -179,6 +179,7 @@ class AssignedProject{
   int start_day;
   Project project;
   vector<Member*> p_members; /// the members assigned in the order of the roles
+  vector<Member> real_members;
 
   public:
 
@@ -194,7 +195,9 @@ class AssignedProject{
 
   bool is_valid(){
     map<string, int> best_level_for;
-    if((int)p_members.size() == project.get_roles().size()){
+    if((int)p_members.size() != project.get_roles().size()){
+      //fprintf(stderr, "false plm 1\n");
+
       return false;
     }
 
@@ -202,6 +205,7 @@ class AssignedProject{
 
     for(auto member:p_members){
       if(frequency_of_member.count(member->get_name()) != 0){
+        //fprintf(stderr, "false plm 2\n");
         return false;
       }
       frequency_of_member[member->get_name()] = 1;
@@ -217,9 +221,13 @@ class AssignedProject{
     for(int i = 0;i < (int)p_members.size();i++){
       int member_skill_level = p_members[i]->get_skill_level_of(project.get_roles()[i].get_name());
       if(member_skill_level < project.get_roles()[i].get_level() - 1){
+        //cerr << "skill " << project.get_roles()[i].get_name() << "\n";
+        //cerr << "required skill level is " << project.get_roles()[i].get_level() << " but member_skill of " << p_members[i]->get_name() << " is " << member_skill_level << "\n";
+        //fprintf(stderr, "false plm 3\n");
         return false;
       }else if(member_skill_level == project.get_roles()[i].get_level() - 1){
         if(best_level_for[project.get_roles()[i].get_name()] < project.get_roles()[i].get_level()){
+        //fprintf(stderr, "false plm 4\n");
           return false;
         }
       }
@@ -248,10 +256,16 @@ class AssignedProject{
     }
   }
 
+  void make_final(){
+    for(auto &p_member:p_members){
+      real_members.push_back(*p_member);
+    }
+  }
+
   void write(){
     cout << project.get_name() << "\n";
-    for(auto &member:p_members){
-      cout << member->get_name() << " ";
+    for(auto &member:real_members){
+      cout << member.get_name() << " ";
     }
     cout << "\n";
   }
@@ -344,8 +358,12 @@ int main(){
 
   int current_day = 0;
   long long score = 0;
+  int longest_increasing_plm = 0;
 
-  while(projects.empty() == false){
+  while(projects.empty() == false && longest_increasing_plm < 1000){
+    if(current_day % 10 == 0){
+      cerr << "current day is " << current_day << "\n";
+    }
     bool done_something = false;
 
     sort(projects.begin(), projects.end(), [&](Project &a, Project &b){
@@ -364,19 +382,32 @@ int main(){
         Project project = projects[project_idx];
         for(auto role_idx:roles_order){
           Member* p_best_member = NULL;
-          for(auto &member:members){
+          for(int i = 0;i < (int)members.size();i++){
+            Member member = members[i];
             if(member.get_last_day_of_work() + 1 > current_day || collection.has_by_name(member.get_name())){
               continue;
             }
-            if(project.get_roles()[role_idx].get_level() - 1 == member.get_skill_level_of(project.get_roles()[role_idx].get_name()) &&
-               collection.get_best_skill_level(project.get_roles()[role_idx].get_name()) >= project.get_roles()[role_idx].get_level()){
-                  if(p_best_member == NULL || member.is_better(*p_best_member, project.get_roles()[role_idx].get_name())){
-                    p_best_member = &member;
+            string skill_name = project.get_roles()[role_idx].get_name();
+            int skill_level = project.get_roles()[role_idx].get_level();
+            if(skill_level - 1 == member.get_skill_level_of(skill_name) && collection.get_best_skill_level(skill_name) >= skill_level){
+                  if(p_best_member == NULL || member.is_better(*p_best_member, skill_name)){
+                    p_best_member = &(members[i]);
+          //            cerr << "project is " << project.get_name() << "\n";
+          //            cerr << "best member for " << project.get_roles()[role_idx].get_name() << " is " << p_best_member->get_name() << "\n";
+          //            cerr << skill_name << "\n";
+          //            cerr << skill_level << "\n";
+          //            cerr << member.get_skill_level_of(skill_name) << "\n";
                   }
-               }else if(project.get_roles()[role_idx].get_level() >= member.get_skill_level_of(project.get_roles()[role_idx].get_name()) &&
-                    (p_best_member == NULL || member.is_better(*p_best_member,project.get_roles()[role_idx].get_name()))){
-                      p_best_member = &member;
+               }else if(skill_level <= member.get_skill_level_of(skill_name)){
+                    if(p_best_member == NULL || member.is_better(*p_best_member, skill_name)){
+                      p_best_member = &(members[i]);
+           //           cerr << "project is " << project.get_name() << "\n";
+           //           cerr << "best member for " << project.get_roles()[role_idx].get_name() << " is " << p_best_member->get_name() << "\n";
+           //           cerr << skill_name << "\n";
+           //           cerr << skill_level << "\n";
+           //           cerr << member.get_skill_level_of(skill_name) << "\n";
                     }
+                }
           }
           if(p_best_member == NULL){
             break; 
@@ -384,19 +415,33 @@ int main(){
           collection.push_back(p_best_member);
         }
         if(collection.get_p_members().size() == roles_order.size()){
-          AssignedProject assignment(current_day, projects[project_idx], collection.get_p_members());
+          vector<Member*> p_members(roles_order.size(), NULL);
+          vector<Member*> tmp = collection.get_p_members();
+          for(int i = 0;i < (int)p_members.size();i++){
+            p_members[roles_order[i]] = tmp[i];
+            //cerr << tmp[i]->get_name() << " " << project.get_roles()[roles_order[i]].get_name() << "\n";
+          }
+          AssignedProject assignment(current_day, projects[project_idx], p_members);
           score += assignment.evaluate();
           assignment.run();
           done_something = true;
+
+          //cerr << "successfully created project " << projects[project_idx].get_name() << "\n";
+          assignment.make_final();
           assignments.push_back(assignment);
           swap(projects[project_idx], projects.back());
           projects.pop_back();
           break;
+        }else{
+          //cerr << "failed creation" << "\n";
         }
       }
     }
     if(done_something == false){
       current_day++;
+      longest_increasing_plm ++;
+    }else{
+      longest_increasing_plm = 0;
     }
   }
 
