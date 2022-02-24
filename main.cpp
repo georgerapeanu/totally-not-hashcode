@@ -360,8 +360,8 @@ int main(){
   long long score = 0;
   int longest_increasing_plm = 0;
 
-  while(projects.empty() == false && longest_increasing_plm < 1000){
-    if(current_day % 10 == 0){
+  while(projects.empty() == false && longest_increasing_plm < 100){
+    if(current_day % 1 == 0){
       cerr << "current day is " << current_day << "\n";
     }
     bool done_something = false;
@@ -370,7 +370,8 @@ int main(){
       return 1LL * a.get_score_at(current_day + a.get_days_to_complete()) * b.get_days_to_complete() < 
              1LL * b.get_score_at(current_day + b.get_days_to_complete()) * a.get_days_to_complete();
     });
-    for(int plm_counter = 0;plm_counter < 5;plm_counter++){
+    for(int plm_counter = 0;plm_counter < 2;plm_counter++){
+      cerr << "plm counter is " << plm_counter << "\n";
       shuffle(members.begin(), members.end(), rng);
       for(int project_idx = 0;project_idx < (int)projects.size();project_idx++){
         vector<int> roles_order(projects[project_idx].get_roles().size(), 0);
@@ -437,6 +438,7 @@ int main(){
         }
       }
     }
+    cerr << "done something:" << done_something;
     if(done_something == false){
       current_day++;
       longest_increasing_plm ++;
