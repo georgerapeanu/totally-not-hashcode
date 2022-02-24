@@ -89,6 +89,7 @@ public:
 };
 
 class Project{
+  string name;
   int days_to_complete;
   int initial_score;
   int best_before_day;
@@ -100,7 +101,8 @@ class Project{
     ;
   }
 
-  Project(int days_to_complete, int initial_score, int best_before_day, vector<Skill> roles){
+  Project(string name, int days_to_complete, int initial_score, int best_before_day, vector<Skill> roles){
+    this->name = name;
     this->days_to_complete = days_to_complete;
     this->initial_score = initial_score;
     this->best_before_day = best_before_day;
@@ -109,7 +111,7 @@ class Project{
 
   void read(){
     int role_count;
-    cin >> days_to_complete >> initial_score >> best_before_day >> role_count;
+    cin >> name >> days_to_complete >> initial_score >> best_before_day >> role_count;
 
     roles = vector<Skill>(role_count, Skill());
 
@@ -132,6 +134,10 @@ class Project{
 
   vector<Skill> get_roles(){
     return roles;
+  }
+
+  string get_name(){
+    return name;
   }
 };
 
@@ -192,7 +198,7 @@ class AssignedProject{
     return start_day + project.get_days_to_complete() - 1;
   }
 
-  int evaluate_project(){
+  int evaluate(){
     assert(this->is_valid());
     return max(project.get_initial_score() - (this->get_last_day() - project.get_best_before_day()), 0);
   }
@@ -217,14 +223,14 @@ class AssignedProject{
 };
 
 class AssignmentRepository{
-  vector<ProjectAssignment> assignments;
+  vector<AssignedProject> assignments;
 
   public:
   AssignmentRepository(){
     ;
   }
   
-  AssignmentRepository(const vector<ProjectAssignment> &assignments){
+  AssignmentRepository(const vector<AssignedProject> &assignments){
     this->assignments = assignments;
   }
 
@@ -246,5 +252,21 @@ class AssignmentRepository{
 };
 
 int main(){
+
+  int n, m;
+
+  cin >> n >> m;
+
+  vector<Member> members(n, Member());
+  vector<Project> projects(m, Project());
+
+  for(auto &member:members){
+    member.read();
+  }
+  
+  for(auto &project:projects){
+    project.read();
+  }
+
   return 0;
 }
