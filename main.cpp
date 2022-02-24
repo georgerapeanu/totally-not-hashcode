@@ -207,6 +207,42 @@ class AssignedProject{
     }
   }
 
+  void write(){
+    cout << project.get_name() << "\n";
+    for(auto &member:p_members){
+      cout << member->get_name() << " ";
+    }
+    cout << "\n";
+  }
+};
+
+class AssignmentRepository{
+  vector<ProjectAssignment> assignments;
+
+  public:
+  AssignmentRepository(){
+    ;
+  }
+  
+  AssignmentRepository(const vector<ProjectAssignment> &assignments){
+    this->assignments = assignments;
+  }
+
+  long long total_score(){
+    long long ans = 0;
+    for(auto assignment:assignments){
+      ans += assignment.evaluate();
+      assignment.run();
+    }
+    return ans;
+  }
+
+  void write(){
+    cout << (int)assignments.size() << "\n";
+    for(auto assignment:assignments){
+      assignment.write();
+    }
+  }
 };
 
 int main(){
